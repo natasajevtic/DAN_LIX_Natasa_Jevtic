@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using Zadatak_1.ViewModels;
 
 namespace Zadatak_1
@@ -12,6 +13,12 @@ namespace Zadatak_1
         {
             InitializeComponent();
             this.DataContext = new MainWindowViewModel(this);
+        }
+        private void Slide_Clicked(object sender, RoutedEventArgs e)
+        {
+            var game = DataContext as MainWindowViewModel;
+            var button = sender as Button;
+            game.ClickedCard(button.DataContext);
         }
     }
 }

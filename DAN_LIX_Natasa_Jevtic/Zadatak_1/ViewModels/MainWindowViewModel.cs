@@ -83,6 +83,37 @@ namespace Zadatak_1.ViewModels
         //can user selected a card
         public bool CanSelect { get; set; }
 
+        //are all cards matched
+        public bool AllCardsMatched
+        {
+            get
+            {
+                foreach (var card in CardCollection)
+                {
+                    if (!card.IsMatched)
+                        return false;
+                }
+                return true;
+            }
+        }
+        //are selected cards still displayed
+        private bool areSlidesActive;
+        public bool AreSlidesActive
+        {
+            get
+            {
+                if (FirstSelectedCard == null || SecondSelectedCard == null)
+                    return true;
+
+                return false;
+            }
+            set
+            {
+                areSlidesActive = value;
+                OnPropertyChanged("AreSlidesActive");
+            }
+        }
+
         public MainWindowViewModel(MainWindow mainWindow)
         {
             this.mainWindow = mainWindow;
@@ -166,7 +197,7 @@ namespace Zadatak_1.ViewModels
         {
             StreamWriter str = new StreamWriter(txtFile, true);
             //writing date, time and duration of game
-            str.WriteLine("[" + DateTime.Now + "] Duration:" + (60 - Int32.Parse(Time)));
+            str.WriteLine("[" + DateTime.Now + "] Duration:" + (60 - Int32.Parse(Time)) + " seconds");
             str.Close();
         }
         /// <summary>
@@ -262,6 +293,114 @@ namespace Zadatak_1.ViewModels
             }
             OnPropertyChanged("AreSlidesActive");
             TimerForChoosing.Stop();
+        }
+        /// <summary>
+        /// This method selects card to be matched.
+        /// </summary>
+        /// <param name="card"></param>
+        public void SelectCard(ImageViewModel card)
+        {
+            card.PeekAtImage();
+
+            if (FirstSelectedCard == null)
+            {
+                FirstSelectedCard = card;
+            }
+            else if (SecondSelectedCard == null)
+            {
+                SecondSelectedCard = card;
+                HideUnmatched();
+            }
+            OnPropertyChanged("AreSlidesActive");
+        }
+        /// <summary>
+        /// This method hiddes all card that are not matched.
+        /// </summary>
+        public void HideUnmatched()
+        {
+            TimerForChoosing.Start();
+        }
+        /// <summary>
+        /// This method is invoked when user clicked on the card.
+        /// </summary>
+        /// <param name="slide">Card.</param>
+        public void ClickedCard(object slide)
+        {
+            if (CanSelect == true)
+            {
+                var selected = slide as ImageViewModel;
+                SelectCard(selected);
+            }
+
+            if (!areSlidesActive)
+            {
+                CheckIfMatched();               
+            }
+            //checking if all card are matched
+            CheckIfAllMatched();
+        }
+        /// <summary>
+        /// This method checks if selected card match.
+        /// </summary>
+        /// <returns>True if match, false if not.</returns>
+        public bool CheckIfMatched()
+        {
+            if (FirstSelectedCard != null && SecondSelectedCard != null)
+            {
+                //selected card match
+                if (FirstSelectedCard.Id == SecondSelectedCard.Id)
+                {
+                    FirstSelectedCard.MarkMatched();
+                    SecondSelectedCard.MarkMatched();
+                    ClearSelected();
+                    return true;
+                }
+                //selected card don't match
+                else
+                {
+                    FirstSelectedCard.MarkFailed();
+                    SecondSelectedCard.MarkFailed();
+                    ClearSelected();
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        /// <summary>
+        /// This method clears selected cards.
+        /// </summary>
+        private void ClearSelected()
+        {
+            FirstSelectedCard = null;
+            SecondSelectedCard = null;
+            CanSelect = false;
+        }
+        /// <summary>
+        /// This method checks if all cards are matched.
+        /// </summary>
+        private void CheckIfAllMatched()
+        {
+            if (AllCardsMatched)
+            {
+                //canceling timer
+                backgroundWorker.CancelAsync();
+                //writing result to txt file
+                ToTxtFile();
+                MessageBoxResult result = MessageBox.Show("Congratulations, you won. Do you want to play again?", "Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    MainWindow newMain = new MainWindow();
+                    mainWindow.Close();
+                    newMain.ShowDialog();
+                }
+                else
+                {
+                    mainWindow.Close();
+                }
+            }
         }
     }
 }
